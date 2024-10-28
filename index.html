@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelling Word Scramble Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        .word { font-size: 2em; margin: 20px; }
+        .letter { display: inline-block; padding: 10px; font-size: 2em; border: 1px solid #000; margin: 5px; cursor: pointer; }
+        .input { padding: 10px; font-size: 1.5em; }
+        button { padding: 10px 20px; font-size: 1.2em; }
+        .message { margin-top: 20px; font-size: 1.5em; color: green; }
+        .success { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Spelling Word Scramble Game</h1>
+    
+    <div id="game-area">
+        <div id="scrambled-word" class="word"></div>
+        <div id="user-input" class="word"></div>
+        <button onclick="checkWord()">Submit</button>
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        const words = ["used", "tune", "school", "rule", "flute", "tube", "drew", "threw", "chew", "screw", "raccoon", "balloon", "loose", "choose", "smooth", "proof", "glue", "true", "blue", "clue"];  // Replace with your own list of words
+        let currentWord = '';
+        let scrambled = '';
+        let userSelection = [];
+
+        // Function to shuffle letters of a word
+        function shuffle(word) {
+            console.log("Shuffling word:", word);
+            const letters = word.split('');
+            for (let i = letters.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [letters[i], letters[j]] = [letters[j], letters[i]];
+            }
+            const shuffledWord = letters.join('');
+            console.log("Shuffled word:", shuffledWord);
+            return shuffledWord;
+        }
+        
+        // Function to display the next scrambled word
+        function nextWord() {
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentWord = words[randomIndex];
+            console.log("Selected word:", currentWord);
+            scrambled = shuffle(currentWord);
+            displayScrambledWord();
+            userSelection = [];
+            updateUserInputDisplay();
+            document.getElementById('message').textContent = '';
+        }
+
+        // Function to display scrambled word as clickable letters
+        function displayScrambledWord() {
+            const scrambledWordDiv = document.getElementById('scrambled-word');
+            scrambledWordDiv.innerHTML = '';
+            scrambled.split('').forEach((letter, index) => {
+                const letterElement = document.createElement('span');
+                letterElement.textContent = letter;
+                letterElement.className = 'letter';
+                letterElement.dataset.index = index;
+                letterElement.onclick = () => toggleLetter(index);
+                scrambledWordDiv.appendChild(letterElement);
+            });
+        }
+
+        // Function to handle letter selection and deselection
+        function toggleLetter(index) {
+            const letterIndex = userSelection.indexOf(index);
+            if (letterIndex > -1) {
+                // Deselect the letter
+                userSelection.splice(letterIndex, 1);
+            } else {
+                // Select the letter
+                userSelection.push(index);
+            }
+            updateScrambledWordDisplay();
+            updateUserInputDisplay();
+        }
+
+        // Function to update the scrambled word display
+        function updateScrambledWordDisplay() {
+            const scrambledLetters = document.querySelectorAll('#scrambled-word .letter');
+            scrambledLetters.forEach((letter, index) => {
+                letter.style.visibility = userSelection.includes(index.toString()) ? 'hidden' : 'visible';
+            });
+        }
+
+        // Function to update the user input display
+        function updateUserInputDisplay() {
+            const userInputDiv = document.getElementById('user-input');
+            userInputDiv.innerHTML = '';
+            userSelection.forEach(index => {
+                const letterElement = document.createElement('span');
+                letterElement.textContent = scrambled[index];
+                letterElement.className = 'letter';
+                letterElement.dataset.index = index;
+                letterElement.onclick = () => toggleLetter(index);
+                userInputDiv.appendChild(letterElement);
+            });
+        }
+
+        // Function to check if the input matches the original word
+        function checkWord() {
+            const selectedLetters = userSelection.map(i => scrambled[i]).join('');
+            console.log("User input:", selectedLetters);
+            console.log("Current word:", currentWord);
+            const messageElement = document.getElementById('message');
+            
+            if (selectedLetters.toLowerCase() === currentWord) {
+                messageElement.textContent = 'Correct!';
+                messageElement.className = 'message success';
+                
+                // Disable the submit button to prevent multiple submissions
+                document.querySelector('button').disabled = true;
+                
+                // Show the correct word
+                document.getElementById('user-input').textContent = currentWord;
+                
+                // Wait for 2 seconds before moving to the next word
+                setTimeout(() => {
+                    nextWord();
+                    messageElement.className = 'message';
+                    document.querySelector('button').disabled = false;
+                }, 2000);
+            } else {
+                messageElement.textContent = 'Try Again!';
+                messageElement.className = 'message';
+            }
+        }
+        
+        // Start the game by loading the first word
+        nextWord();
+    </script>
+</body>
+</html>
