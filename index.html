@@ -26,10 +26,22 @@
     </div>
 
     <script>
-        const words = ["used", "tune", "school", "rule", "flute", "tube", "drew", "threw", "chew", "screw", "raccoon", "balloon", "loose", "choose", "smooth", "proof", "glue", "true", "blue", "clue"];  // Replace with your own list of words
+        let words = [];
         let currentWord = '';
         let scrambled = '';
         let userSelection = [];
+
+        // Function to fetch words from wordlist.txt
+        async function fetchWords() {
+            try {
+                const response = await fetch('wordlist.txt');
+                const text = await response.text();
+                words = text.split('\n').map(word => word.trim().toLowerCase()).filter(word => word.length > 0);
+                nextWord();
+            } catch (error) {
+                console.error('Error fetching word list:', error);
+            }
+        }
 
         // Function to shuffle letters of a word
         function shuffle(word) {
@@ -43,7 +55,7 @@
             console.log("Shuffled word:", shuffledWord);
             return shuffledWord;
         }
-        
+
         // Function to display the next scrambled word
         function nextWord() {
             const randomIndex = Math.floor(Math.random() * words.length);
@@ -136,8 +148,8 @@
             }
         }
         
-        // Start the game by loading the first word
-        nextWord();
+        // Start the game by loading the word list
+        fetchWords();
     </script>
 </body>
 </html>
