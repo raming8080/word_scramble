@@ -1,3 +1,21 @@
+:root {
+    --background-color: #789DBC; /* Dark pastel background */
+    --text-color: #FEF9F2; /* Light text color for contrast */
+    --letter-bg-color: #5a5a5a; /* Darker pastel for letters */
+    --letter-hover-color: #a3c4f3; /* Light pastel hover color */
+    --button-bg-color: #5a5a5a; /* Button color in dark mode */
+    --button-hover-color: #C9E9D2; /* Button hover color in dark mode */
+}
+
+body.light-mode {
+    --background-color: #FEF9F2; /* Light background */
+    --text-color: #000000; /* Default text color */
+    --letter-bg-color: #FFE3E3; /* Light pastel for letters */
+    --letter-hover-color: #C9E9D2; /* Light pastel hover color */
+    --button-bg-color: #789DBC; /* Button color */
+    --button-hover-color: #C9E9D2; /* Button hover color */
+}
+
 body {
     font-family: Arial, sans-serif;
     display: flex;
@@ -6,6 +24,8 @@ body {
     height: 100vh;
     margin: 0;
     text-align: center;
+    background-color: var(--background-color);
+    color: var(--text-color);
 }
 
 #game-area {
@@ -23,45 +43,39 @@ body {
     height: 70px;
     line-height: 70px;
     font-size: 1.5em;
-    border: 1px solid #000;
+    border: 1px solid var(--text-color);
     margin: 5px;
     cursor: pointer;
     border-radius: 50%;
     text-align: center;
-    background-color: #f0f0f0;
-    transition: background-color 0.3s;
+    background-color: var(--letter-bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .letter:hover {
-    background-color: #cce7ff;
+    background-color: var(--letter-hover-color);
 }
 
-.input {
-    padding: 10px;
-    font-size: 1.5em;
-}
-
-.button {
-    background-color: #ddd;
+button {
+    padding: 10px 30px;
+    font-size: 1.2em;
     border: none;
-    color: black;
-    padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    margin: 4px 2px;
+    border-radius: 25px;
+    background-color: var(--button-bg-color);
+    color: var(--text-color);
     cursor: pointer;
-    border-radius: 16px;
-  }
+    transition: background-color 0.3s;
+}
 
 button:hover {
-    background-color: #0056b3;
+    background-color: var(--button-hover-color);
 }
 
 .message {
     margin-top: 20px;
     font-size: 1.5em;
-    color: green;
+    color: var(--text-color);
 }
 
 .success {
