@@ -29,6 +29,11 @@ body {
     border-radius: 50%;
     text-align: center;
     background-color: #f0f0f0;
+    transition: background-color 0.3s;
+}
+
+.letter:hover {
+    background-color: #cce7ff;
 }
 
 .input {
@@ -36,9 +41,21 @@ body {
     font-size: 1.5em;
 }
 
-button {
+.button {
+    background-color: #ddd;
+    border: none;
+    color: black;
     padding: 10px 20px;
-    font-size: 1.2em;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 16px;
+  }
+
+button:hover {
+    background-color: #0056b3;
 }
 
 .message {
