@@ -12,8 +12,8 @@
         <h1>Spelling Word Scramble Game</h1>
         <div id="scrambled-word" class="word"></div>
         <div id="user-input" class="word"></div>
-        <button class="button" onclick="checkWord()">Submit</button>
-        <div id="message" class="message"></div>
+        <button id="submit-button" class="button" onclick="checkWord()">Submit</button>
+        <div id="animation" class="hidden">Correct!</div>
     </div>
 
     <script>
@@ -56,7 +56,7 @@
             displayScrambledWord();
             userSelection = [];
             updateUserInputDisplay();
-            document.getElementById('message').textContent = '';
+            document.getElementById('animation').classList.add('hidden');
         }
 
         // Function to display scrambled word as clickable letters
@@ -115,14 +115,20 @@
             const selectedLetters = userSelection.map(i => scrambled[i]).join('');
             console.log("User input:", selectedLetters);
             console.log("Current word:", currentWord);
-            const messageElement = document.getElementById('message');
+            const animationElement = document.getElementById('animation');
             
             if (selectedLetters.toLowerCase() === currentWord) {
-                messageElement.textContent = 'Correct!';
-                messageElement.className = 'message success';
-                
+                animationElement.classList.remove('hidden');
+                animationElement.classList.add('show-animation');
+
+                // Remove the animation class after it ends
+                animationElement.addEventListener('animationend', function() {
+                    animationElement.classList.remove('show-animation');
+                    animationElement.classList.add('hidden');
+                }, { once: true });
+
                 // Disable the submit button to prevent multiple submissions
-                document.querySelector('button').disabled = true;
+                document.getElementById('submit-button').disabled = true;
                 
                 // Show the correct word
                 document.getElementById('user-input').textContent = currentWord;
@@ -130,17 +136,36 @@
                 // Wait for 2 seconds before moving to the next word
                 setTimeout(() => {
                     nextWord();
-                    messageElement.className = 'message';
-                    document.querySelector('button').disabled = false;
+                    document.getElementById('submit-button').disabled = false;
                 }, 2000);
             } else {
-                messageElement.textContent = 'Try Again!';
-                messageElement.className = 'message';
+                animationElement.classList.remove('show-animation');
+                animationElement.classList.add('hidden');
             }
         }
 
         // Start the game by loading the word list
         fetchWords();
+
+        document.getElementById('submit-button').addEventListener('click', function() {
+            // Assume checkAnswer() returns true if the answer is correct
+            if (checkAnswer()) {
+                const animationElement = document.getElementById('animation');
+                animationElement.classList.remove('hidden');
+                animationElement.classList.add('show-animation');
+
+                // Remove the animation class after it ends
+                animationElement.addEventListener('animationend', function() {
+                    animationElement.classList.remove('show-animation');
+                    animationElement.classList.add('hidden');
+                }, { once: true });
+            }
+        });
+
+        function checkAnswer() {
+            // Your logic to check if the answer is correct
+            return true; // Placeholder for demonstration
+        }
     </script>
 </body>
 </html>
