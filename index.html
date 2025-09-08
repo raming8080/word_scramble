@@ -12,7 +12,7 @@
         <h1>Spelling Word Scramble Game</h1>
         <div id="scrambled-word" class="word"></div>
         <div id="user-input" class="word"></div>
-        <button id="submit-button" class="button" onclick="checkWord()">Submit</button>
+        <button id="submit-button" class="button">Submit</button>
         <div id="animation" class="hidden">Correct!</div>
     </div>
 
@@ -118,6 +118,7 @@
             const animationElement = document.getElementById('animation');
             
             if (selectedLetters.toLowerCase() === currentWord) {
+                animationElement.textContent = 'Correct!';
                 animationElement.classList.remove('hidden');
                 animationElement.classList.add('show-animation');
 
@@ -139,33 +140,35 @@
                     document.getElementById('submit-button').disabled = false;
                 }, 2000);
             } else {
-                animationElement.classList.remove('show-animation');
-                animationElement.classList.add('hidden');
+                // Show incorrect feedback and reset the same word
+                animationElement.textContent = 'incorrect';
+                animationElement.classList.remove('hidden');
+                animationElement.classList.add('show-animation');
+
+                // After the animation, hide message and reset the scramble/state
+                animationElement.addEventListener('animationend', function() {
+                    animationElement.classList.remove('show-animation');
+                    animationElement.classList.add('hidden');
+
+                    // Reset to the same word from scratch (reshuffle and clear input)
+                    scrambled = shuffle(currentWord);
+                    userSelection = [];
+                    displayScrambledWord();
+                    updateUserInputDisplay();
+                    updateScrambledWordDisplay();
+                }, { once: true });
             }
         }
 
         // Start the game by loading the word list
         fetchWords();
 
-        document.getElementById('submit-button').addEventListener('click', function() {
-            // Assume checkAnswer() returns true if the answer is correct
-            if (checkAnswer()) {
-                const animationElement = document.getElementById('animation');
-                animationElement.classList.remove('hidden');
-                animationElement.classList.add('show-animation');
+        // Bind submit button via JS instead of inline onclick
+        document.getElementById('submit-button').addEventListener('click', checkWord);
 
-                // Remove the animation class after it ends
-                animationElement.addEventListener('animationend', function() {
-                    animationElement.classList.remove('show-animation');
-                    animationElement.classList.add('hidden');
-                }, { once: true });
-            }
-        });
-
-        function checkAnswer() {
-            // Your logic to check if the answer is correct
-            return true; // Placeholder for demonstration
-        }
+        // Note: The submit button uses inline onclick to call checkWord().
+        // Removed a redundant event listener and placeholder checkAnswer()
+        // that previously forced the success animation on every click.
     </script>
 </body>
 </html>
