@@ -145,28 +145,39 @@
                     document.getElementById('submit-button').disabled = false;
                 }, 2000);
             } else {
-                // Flash all letters red for negative feedback
-                document.querySelectorAll('#scrambled-word .letter, #user-input .letter').forEach(el => {
-                    el.classList.add('flash-red');
+                // Per-letter feedback: green if correct position, red otherwise
+                const userLetters = document.querySelectorAll('#user-input .letter');
+                userLetters.forEach((el, i) => {
+                    const selectedChar = scrambled[userSelection[i]];
+                    const expectedChar = currentWord[i];
+                    const isCorrect = selectedChar && expectedChar && selectedChar.toLowerCase() === expectedChar;
+                    const cls = isCorrect ? 'flash-green' : 'flash-red';
+                    el.classList.add(cls);
                     el.addEventListener('animationend', () => {
-                        el.classList.remove('flash-red');
+                        el.classList.remove(cls);
                     }, { once: true });
                 });
 
-                // Show incorrect feedback and reset the same word
+                // Show incorrect feedback message
                 animationElement.textContent = 'incorrect';
                 animationElement.classList.remove('hidden');
                 animationElement.classList.add('show-animation');
 
-                // After the animation, hide message and reset the scramble/state
+                // After the animation, hide message and reset only incorrect selections
                 animationElement.addEventListener('animationend', function() {
                     animationElement.classList.remove('show-animation');
                     animationElement.classList.add('hidden');
 
-                    // Reset to the same word from scratch (reshuffle and clear input)
-                    scrambled = shuffle(currentWord);
-                    userSelection = [];
-                    displayScrambledWord();
+                    // Keep only the correct positions in the current selection
+                    const kept = [];
+                    userSelection.forEach((idx, i) => {
+                        const selectedChar = scrambled[idx];
+                        const expectedChar = currentWord[i];
+                        if (selectedChar && expectedChar && selectedChar.toLowerCase() === expectedChar) {
+                            kept.push(idx);
+                        }
+                    });
+                    userSelection = kept;
                     updateUserInputDisplay();
                     updateScrambledWordDisplay();
                 }, { once: true });
