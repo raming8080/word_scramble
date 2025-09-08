@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Summary • Word Scramble</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .summary-container { max-width: 900px; margin: 0 auto; }
+    .summary-actions { display:flex; gap:12px; justify-content:center; margin:16px 0 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.2); text-align: left; }
+    th { font-weight: bold; }
+    .num { text-align: right; }
+  </style>
+  </head>
+<body>
+  <div class="summary-container">
+    <h1>Game Summary</h1>
+    <div id="totals" class="stats"></div>
+    <div class="summary-actions">
+      <button id="play-again" class="button">Play Again (Reset)</button>
+      <button id="back-home" class="button">Back to Game</button>
+    </div>
+    <div id="report"></div>
+  </div>
+
+  <script>
+    const STATS_KEY = 'ws_stats_v1';
+
+    function loadStats() {
+      try { return JSON.parse(localStorage.getItem(STATS_KEY) || '{}') || {}; }
+      catch { return {}; }
+    }
+
+    function getWordStats(stats, word) {
+      if (!stats[word]) stats[word] = { correct: 0, incorrect: 0 };
+      return stats[word];
+    }
+
+    function totals(stats) {
+      let correct = 0, incorrect = 0;
+      for (const w of Object.keys(stats)) {
+        correct += stats[w].correct || 0;
+        incorrect += stats[w].incorrect || 0;
+      }
+      const attempts = correct + incorrect;
+      const acc = attempts ? Math.round((correct / attempts) * 100) : 0;
+      return { correct, incorrect, attempts, accuracyPct: acc };
+    }
+
+    async function loadWords() {
+      // Try to fetch word list to ensure we rank all words
+      try {
+        const res = await fetch('wordlist.txt');
+        const text = await res.text();
+        return text.split('\n').map(w => w.trim().toLowerCase()).filter(Boolean);
+      } catch {
+        return [];
+      }
+    }
+
+    function classify(ws) {
+      const attempts = (ws.correct || 0) + (ws.incorrect || 0);
+      if (!attempts) return 'unseen';
+      const accuracy = ws.correct / attempts;
+      if (attempts >= 3 && accuracy >= 0.8) return 'easy';
+      if (attempts >= 2 && accuracy < 0.6) return 'hard';
+      if (ws.incorrect >= 2 && ws.correct === 0) return 'hard';
+      return 'neutral';
+    }
+
+    function easeScore(ws) {
+      // Higher = easier. Accuracy primary, attempts as small confidence boost.
+      const attempts = (ws.correct || 0) + (ws.incorrect || 0);
+      const acc = attempts ? ws.correct / attempts : 0;
+      return acc + Math.min(attempts, 10) * 0.005; // up to +0.05 bonus
+    }
+
+    function render() {
+      Promise.all([loadWords()]).then(([words]) => {
+        const stats = loadStats();
+        const allWords = words.length ? words : Object.keys(stats);
+
+        const rows = allWords.map(word => {
+          const ws = getWordStats(stats, word);
+          const attempts = (ws.correct || 0) + (ws.incorrect || 0);
+          const accuracy = attempts ? Math.round((ws.correct / attempts) * 100) : 0;
+          return {
+            word,
+            correct: ws.correct || 0,
+            incorrect: ws.incorrect || 0,
+            attempts,
+            accuracy,
+            difficulty: classify(ws),
+            score: easeScore(ws)
+          };
+        });
+
+        // Sort: easiest to hardest (highest score to lowest)
+        rows.sort((a, b) => b.score - a.score);
+
+        const t = totals(stats);
+        const totalsDiv = document.getElementById('totals');
+        totalsDiv.innerHTML = `
+          <span>Correct: ${t.correct}</span>
+          <span>Incorrect: ${t.incorrect}</span>
+          <span>Accuracy: ${t.accuracyPct}%</span>
+        `;
+
+        const report = document.getElementById('report');
+        const table = document.createElement('table');
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Word</th>
+              <th class="num">Attempts</th>
+              <th class="num">Correct</th>
+              <th class="num">Incorrect</th>
+              <th class="num">Accuracy</th>
+              <th>Difficulty</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${r.word}</td>
+                <td class="num">${r.attempts}</td>
+                <td class="num">${r.correct}</td>
+                <td class="num">${r.incorrect}</td>
+                <td class="num">${r.accuracy}%</td>
+                <td><span class="badge ${r.difficulty}">${r.difficulty}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+        report.innerHTML = '';
+        report.appendChild(table);
+      });
+    }
+
+    document.getElementById('play-again').addEventListener('click', () => {
+      if (confirm('Reset stats and start a new game?')) {
+        localStorage.setItem(STATS_KEY, '{}');
+        window.location.href = 'index.html';
+      }
+    });
+
+    document.getElementById('back-home').addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    render();
+  </script>
+</body>
+</html>
+

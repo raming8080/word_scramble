@@ -10,6 +10,14 @@
 
     <div id="game-area">
         <h1>Spelling Word Scramble Game</h1>
+        <div id="stats-bar" class="stats">
+            <span id="total-correct">Correct: 0</span>
+            <span id="total-incorrect">Incorrect: 0</span>
+            <span id="total-accuracy">Accuracy: 0%</span>
+            <span id="current-word-stats">Word: 0/0</span>
+            <span id="current-difficulty" class="badge">unseen</span>
+            <button id="reset-stats" class="button small">Reset Stats</button>
+        </div>
         <div id="scrambled-word" class="word"></div>
         <div id="user-input" class="word"></div>
         <button id="submit-button" class="button">Submit</button>
@@ -21,6 +29,116 @@
         let currentWord = '';
         let scrambled = '';
         let userSelection = [];
+        let gameOver = false;
+
+        // Simple localStorage-backed per-word stats
+        const STATS_KEY = 'ws_stats_v1';
+        let stats = loadStats();
+
+        function loadStats() {
+            try {
+                const raw = localStorage.getItem(STATS_KEY);
+                if (!raw) return {};
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (e) {
+                console.warn('Failed to load stats, resetting.', e);
+                return {};
+            }
+        }
+
+        function saveStats() {
+            try {
+                localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+            } catch (e) {
+                console.warn('Failed to save stats', e);
+            }
+        }
+
+        function getWordStats(word) {
+            if (!stats[word]) stats[word] = { correct: 0, incorrect: 0 };
+            return stats[word];
+        }
+
+        function recordResult(word, isCorrect) {
+            const ws = getWordStats(word);
+            if (isCorrect) ws.correct += 1; else ws.incorrect += 1;
+            saveStats();
+            updateStatsUI();
+            // Mark game over if all words have become easy
+            if (allWordsEasy()) {
+                gameOver = true;
+            }
+        }
+
+        function totals() {
+            let correct = 0, incorrect = 0;
+            for (const w of Object.keys(stats)) {
+                correct += stats[w].correct || 0;
+                incorrect += stats[w].incorrect || 0;
+            }
+            const attempts = correct + incorrect;
+            const acc = attempts ? Math.round((correct / attempts) * 100) : 0;
+            return { correct, incorrect, attempts, accuracyPct: acc };
+        }
+
+        function classifyWord(word) {
+            const ws = getWordStats(word);
+            const attempts = ws.correct + ws.incorrect;
+            if (attempts === 0) return 'unseen';
+            const accuracy = attempts ? ws.correct / attempts : 0;
+            if (attempts >= 3 && accuracy >= 0.8) return 'easy';
+            if (attempts >= 2 && accuracy < 0.6) return 'hard';
+            if (ws.incorrect >= 2 && ws.correct === 0) return 'hard';
+            return 'neutral';
+        }
+
+        function pickNextWord() {
+            // Prefer hard and unseen, avoid easy when possible
+            const hard = words.filter(w => classifyWord(w) === 'hard');
+            const unseen = words.filter(w => classifyWord(w) === 'unseen');
+            const neutral = words.filter(w => classifyWord(w) === 'neutral');
+            const easy = words.filter(w => classifyWord(w) === 'easy');
+
+            let pool = [];
+            if (hard.length) {
+                pool = hard.concat(unseen); // heavy focus on hard+unseen
+            } else if (unseen.length) {
+                pool = unseen.concat(neutral);
+            } else if (neutral.length) {
+                pool = neutral; // avoid easy if we can
+            } else {
+                pool = easy.length ? easy : words; // fallback to easy or all
+            }
+
+            const idx = Math.floor(Math.random() * pool.length);
+            return pool[idx];
+        }
+
+        function updateStatsUI() {
+            const { correct, incorrect, accuracyPct } = totals();
+            document.getElementById('total-correct').textContent = `Correct: ${correct}`;
+            document.getElementById('total-incorrect').textContent = `Incorrect: ${incorrect}`;
+            document.getElementById('total-accuracy').textContent = `Accuracy: ${accuracyPct}%`;
+
+            if (currentWord) {
+                const ws = getWordStats(currentWord);
+                const attempts = ws.correct + ws.incorrect;
+                document.getElementById('current-word-stats').textContent = `Word: ${ws.correct}/${attempts}`;
+                const diff = classifyWord(currentWord);
+                const badge = document.getElementById('current-difficulty');
+                badge.textContent = diff;
+                badge.className = `badge ${diff}`;
+            }
+        }
+
+        function allWordsEasy() {
+            return words.length > 0 && words.every(w => classifyWord(w) === 'easy');
+        }
+
+        function goToSummary() {
+            window.location.href = 'summary.html';
+        }
 
         // Function to fetch words from wordlist.txt
         async function fetchWords() {
@@ -49,14 +167,14 @@
 
         // Function to display the next scrambled word
         function nextWord() {
-            const randomIndex = Math.floor(Math.random() * words.length);
-            currentWord = words[randomIndex];
+            currentWord = pickNextWord();
             console.log("Selected word:", currentWord);
             scrambled = shuffle(currentWord);
             displayScrambledWord();
             userSelection = [];
             updateUserInputDisplay();
             document.getElementById('animation').classList.add('hidden');
+            updateStatsUI();
         }
 
         // Function to display scrambled word as clickable letters
@@ -118,6 +236,8 @@
             const animationElement = document.getElementById('animation');
             
             if (selectedLetters.toLowerCase() === currentWord) {
+                // Track correct attempt
+                recordResult(currentWord, true);
                 // Flash the assembled word letters green for positive feedback
                 document.querySelectorAll('#user-input .letter').forEach(el => {
                     el.classList.add('flash-green');
@@ -139,12 +259,20 @@
                 // Disable the submit button to prevent multiple submissions
                 document.getElementById('submit-button').disabled = true;
                 
-                // Wait for 2 seconds before moving to the next word
+                // Wait for 2 seconds, then either redirect to summary or continue
                 setTimeout(() => {
-                    nextWord();
-                    document.getElementById('submit-button').disabled = false;
+                    if (gameOver) {
+                        goToSummary();
+                    } else {
+                        nextWord();
+                        document.getElementById('submit-button').disabled = false;
+                    }
                 }, 2000);
             } else {
+                // Track incorrect attempt only if a full-length guess was made
+                if (selectedLetters.length === currentWord.length) {
+                    recordResult(currentWord, false);
+                }
                 // Per-letter feedback: green if correct position, red otherwise
                 const userLetters = document.querySelectorAll('#user-input .letter');
                 userLetters.forEach((el, i) => {
@@ -185,10 +313,24 @@
         }
 
         // Start the game by loading the word list
-        fetchWords();
+        fetchWords().then(() => {
+            // If all words are already easy from prior session, jump to summary
+            if (allWordsEasy()) {
+                goToSummary();
+            }
+        });
 
         // Bind submit button via JS instead of inline onclick
         document.getElementById('submit-button').addEventListener('click', checkWord);
+
+        // Reset stats button
+        document.getElementById('reset-stats').addEventListener('click', () => {
+            if (confirm('Reset all stats? This cannot be undone.')) {
+                stats = {};
+                saveStats();
+                updateStatsUI();
+            }
+        });
 
         // Note: The submit button uses inline onclick to call checkWord().
         // Removed a redundant event listener and placeholder checkAnswer()

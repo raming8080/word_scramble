@@ -3,6 +3,7 @@ FROM nginx:alpine
 
 # Copy the HTML, CSS, and wordlist files to the Nginx HTML directory
 COPY index.html /usr/share/nginx/html/
+COPY summary.html /usr/share/nginx/html/
 COPY styles.css /usr/share/nginx/html/
 COPY wordlist.txt /usr/share/nginx/html/
 
